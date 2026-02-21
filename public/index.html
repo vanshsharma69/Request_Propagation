@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Request Context Propagation Demo</title>
+
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+  :root {
+    --bg: #080c16;
+    --panel: rgba(20, 26, 40, 0.85);
+    --border: #1f2b44;
+    --accent: #22d3ee;
+    --accent-strong: #0ea5e9;
+    --success: #34d399;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Space Grotesk", sans-serif;
+    color: var(--text);
+  }
+
+  body {
+    min-height: 100vh;
+    background: radial-gradient(circle at 15% 20%, rgba(34, 211, 238, 0.12), transparent 25%),
+                radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.18), transparent 28%),
+                radial-gradient(circle at 30% 80%, rgba(52, 211, 153, 0.12), transparent 30%),
+                linear-gradient(135deg, #0b1224, #0a0f1c 70%, #0f172a);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 1080px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 36px;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(16px);
+    animation: fadeIn 0.6s ease;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .title-group h1 {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+  }
+
+  .title-group p {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .pill {
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(34, 211, 238, 0.08);
+    color: #7dd3fc;
+    font-size: 13px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+
+  .card {
+    background: rgba(12, 17, 30, 0.85);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
+  }
+
+  .card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .card p {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+
+  .input-group label {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .input-group input {
+    width: 100%;
+    padding: 12px 14px;
+    margin-top: 8px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: #0c1324;
+    outline: none;
+    font-size: 14px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .input-group input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2);
+  }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+
+  button {
+    padding: 12px 18px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .btn-primary {
+    background: linear-gradient(120deg, var(--accent), var(--accent-strong));
+    color: #04101f;
+    box-shadow: 0 10px 25px rgba(34, 211, 238, 0.25);
+  }
+
+  .btn-primary:hover { transform: translateY(-1px) scale(1.01); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  .btn-ghost:hover { border-color: var(--accent); }
+
+  .meta {
+    margin-top: 10px;
+    padding: 12px;
+    background: #0c1324;
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    word-break: break-all;
+    color: #c7d2fe;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .meta span { color: #e2e8f0; }
+
+  .terminal {
+    background: #050a16;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    min-height: 220px;
+    max-height: 320px;
+    overflow: auto;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  }
+
+  .terminal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .dots {
+    display: flex;
+    gap: 6px;
+  }
+
+  .dot { width: 10px; height: 10px; border-radius: 50%; opacity: 0.8; }
+  .dot.red { background: #f87171; }
+  .dot.amber { background: #fbbf24; }
+  .dot.green { background: #34d399; }
+
+  .logs {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #c7d2fe;
+  }
+
+  .log-row {
+    display: grid;
+    grid-template-columns: 56px 140px 1fr;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(34, 211, 238, 0.03);
+    border: 1px solid transparent;
+    margin-bottom: 6px;
+  }
+
+  .log-row:hover { border-color: rgba(34, 211, 238, 0.25); }
+
+  .log-index { color: #7dd3fc; }
+  .log-time { color: #a5b4fc; }
+  .log-message { color: #e2e8f0; }
+
+  .empty-state {
+    color: var(--muted);
+    text-align: center;
+    padding: 30px 10px;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 16px;
+  }
+
+  @media (max-width: 640px) {
+    .log-row { grid-template-columns: 48px 1fr; grid-auto-rows: auto; }
+    .log-time { grid-column: 2; }
+    .log-message { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="title-group">
+      <h1>Request Context Propagation</h1>
+      <p>Trace requests end-to-end with async context and indexed MongoDB logging.</p>
+    </div>
+    <div class="pill">Live demo • Node.js</div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>1. Generate Request</h3>
+      <p>Create a new request lifecycle; the ID is auto-copied below.</p>
+      <div class="actions">
+        <button class="btn-primary" onclick="makeRequest()">Generate New Request</button>
+        <button class="btn-ghost" onclick="copyRequestId()">Copy Request ID</button>
+      </div>
+      <div class="meta">
+        <span>Request ID</span>
+        <span id="requestId">None</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>2. Fetch Logs</h3>
+      <p>Paste any Request ID to replay the log trail in a terminal-style view.</p>
+      <div class="input-group">
+        <label for="searchId">Request ID</label>
+        <input id="searchId" placeholder="Paste Request ID here..." />
+      </div>
+      <div class="actions">
+        <button class="btn-primary" onclick="fetchLogs()">Fetch Logs</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="terminal">
+      <div class="terminal-header">
+        <div class="dots">
+          <span class="dot red"></span>
+          <span class="dot amber"></span>
+          <span class="dot green"></span>
+        </div>
+        <span>Log Stream</span>
+      </div>
+      <div id="logs" class="logs empty-state">Logs will appear here…</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Node.js • Async Context Propagation • MongoDB Indexed Logging
+  </div>
+
+</div>
+
+<script>
+  const requestIdEl = document.getElementById("requestId");
+  const searchIdInput = document.getElementById("searchId");
+  const logsContainer = document.getElementById("logs");
+
+  async function makeRequest() {
+    try {
+      const res = await fetch("/demo");
+      const data = await res.json();
+
+      requestIdEl.textContent = data.requestId;
+      searchIdInput.value = data.requestId;
+      renderInfo("Request created. Fetch logs to see the lifecycle.");
+    } catch (err) {
+      renderInfo("Unable to create request. Please try again.");
+    }
+  }
+
+  async function fetchLogs() {
+    const id = searchIdInput.value.trim();
+    if (!id) return alert("Please enter Request ID");
+
+    try {
+      renderInfo("Fetching logs…");
+      const res = await fetch("/logs/" + id);
+      const logs = await res.json();
+      renderLogs(logs);
+    } catch (err) {
+      renderInfo("Failed to fetch logs. Please try again.");
+    }
+  }
+
+  function renderLogs(logs) {
+    if (!Array.isArray(logs) || logs.length === 0) {
+      renderInfo("No logs found for this Request ID.");
+      return;
+    }
+
+    logsContainer.classList.remove("empty-state");
+    logsContainer.innerHTML = logs
+      .map((log, idx) => {
+        const timestamp = formatTime(log.timestamp);
+        const message = log.message || "(no message)";
+        return `
+          <div class="log-row">
+            <span class="log-index">#${idx + 1}</span>
+            <span class="log-time">${timestamp}</span>
+            <span class="log-message">${message}</span>
+          </div>
+        `;
+      })
+      .join("");
+  }
+
+  function renderInfo(message) {
+    logsContainer.classList.add("empty-state");
+    logsContainer.innerHTML = message;
+  }
+
+  function copyRequestId() {
+    const id = requestIdEl.textContent.trim();
+    if (!id || id === "None") return alert("No Request ID to copy yet.");
+    navigator.clipboard.writeText(id);
+  }
+
+  function formatTime(ts) {
+    // Ensure consistent readable timestamps.
+    return ts ? new Date(ts).toLocaleString() : "timestamp unavailable";
+  }
+</script>
+
+</body>
+</html>
