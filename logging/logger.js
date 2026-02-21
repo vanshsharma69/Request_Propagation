@@ -3,8 +3,9 @@ const { saveLog } = require("../db/logRepository");
 
 async function log(message) {
   const context = getContext();
+  const requestId = context?.requestId || process.env.REQUEST_ID || "NO_CONTEXT";
   const entry = {
-    requestId: context?.requestId || "NO_CONTEXT",
+    requestId,
     message,
     timestamp: new Date(),
   };
