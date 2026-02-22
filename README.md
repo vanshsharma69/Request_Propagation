@@ -12,7 +12,7 @@ This project helps you understand how real production systems trace a request fr
 ✔ How to preserve it across async functions
 ✔ How to log using that Request ID
 ✔ How to store logs in MongoDB
-✔ How to fetch logs by Request ID from UI
+✔ How to fetch logs by Request ID from UI/UX
 
 This concept is called:
 
