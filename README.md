@@ -221,7 +221,7 @@ Returns all related logs.
 ## 1️⃣ Install Dependencies
 
 ```bash
-npm install
+npm  install
 ```
 
 ---
