@@ -7,6 +7,7 @@ function contextMiddleware(req, res, next) {
     startTime: Date.now(),
   };
 
+  
   runWithContext(context, () => {
     next();
   });
