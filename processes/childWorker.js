@@ -1,7 +1,7 @@
 const { log } = require("../logging/logger");
 const { connectDB } = require("../config/db");
 
-(async () => {
+(async () =>{
   await connectDB();
 
   await log("Child process started");
